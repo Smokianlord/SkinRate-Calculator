@@ -240,14 +240,6 @@ class SkinRateCalculator(tk.Tk):
         self._build_form(shell)
         self._build_results(shell)
 
-        footer = tk.Label(
-            shell,
-            text="Tip: Press Enter to calculate. BDT output uses the taka symbol with no comma.",
-            font=("Segoe UI", 9),
-            bg=BG,
-            fg=MUTED,
-        )
-        footer.grid(row=3, column=0, sticky="w", pady=(12, 0))
 
     def _build_header(self, master):
         header = tk.Frame(master, bg=BG_DARK, bd=0, relief=tk.RAISED, padx=18, pady=16)
@@ -261,11 +253,11 @@ class SkinRateCalculator(tk.Tk):
             bg="#38bdf8",
             fg="#082f49",
             width=4,
-            height=2,
+            height=1,
             relief=tk.RAISED,
             bd=3,
         )
-        logo.grid(row=0, column=0, rowspan=2, sticky="w", padx=(0, 14))
+        logo.grid(row=0, column=0, sticky="w", padx=(0, 14))
 
         tk.Label(
             header,
@@ -274,14 +266,6 @@ class SkinRateCalculator(tk.Tk):
             bg=BG_DARK,
             fg="white",
         ).grid(row=0, column=1, sticky="w")
-        tk.Label(
-            header,
-            text="Colorful 3D calculator for item rate, wallet rate and cashout totals",
-            font=("Segoe UI", 11),
-            bg=BG_DARK,
-            fg="#cbd5e1",
-        ).grid(row=1, column=1, sticky="w", pady=(2, 0))
-
         badge = tk.Label(
             header,
             text="v2",
@@ -293,7 +277,7 @@ class SkinRateCalculator(tk.Tk):
             padx=16,
             pady=6,
         )
-        badge.grid(row=0, column=2, rowspan=2, sticky="e")
+        badge.grid(row=0, column=2, sticky="e")
 
     def _build_form(self, master):
         form_card = self._card(master, bg=PANEL, padx=18, pady=18)
