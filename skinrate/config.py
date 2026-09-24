@@ -8,18 +8,16 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime
 
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "default_item_rate": 120.0,
-    "default_wallet_rate": 118.0,
+    "default_rate": 85.0,
     "custom_fee_pct": 1.85,
     "use_comma_bdt": False,
     "currency_symbol": "\u09F3",
     "theme": "dark",
     "live_calc": True,
-    "window_size": "1060x720",
     "history": [],
 }
 
@@ -35,7 +33,6 @@ def get_config_dir() -> Path:
                 return path
             except OSError:
                 pass
-    # Fallback to local directory
     path = Path(__file__).resolve().parent.parent / ".config"
     path.mkdir(parents=True, exist_ok=True)
     return path
@@ -59,10 +56,12 @@ class ConfigManager:
                 with open(self.file_path, "r", encoding="utf-8") as f:
                     loaded = json.load(f)
                     if isinstance(loaded, dict):
-                        # Merge with defaults to ensure all keys exist
                         for k, v in DEFAULT_CONFIG.items():
                             if k not in loaded:
                                 loaded[k] = v
+                        # If legacy config had 120 or old keys, update to normal rate 85 if needed
+                        if "default_rate" not in loaded and "default_item_rate" in loaded:
+                            loaded["default_rate"] = loaded.get("default_item_rate", 85.0)
                         self.data = loaded
             except (json.JSONDecodeError, OSError):
                 self.data = dict(DEFAULT_CONFIG)
@@ -87,7 +86,6 @@ class ConfigManager:
     def add_history_entry(self, entry: Dict[str, Any], max_items: int = 30) -> None:
         history: List[Dict[str, Any]] = self.data.get("history", [])
         entry["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # Prepend new entry
         history.insert(0, entry)
         if len(history) > max_items:
             history = history[:max_items]

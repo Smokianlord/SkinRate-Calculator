@@ -1,11 +1,12 @@
 """
 Automated Build and Release Script for SkinRate Calculator Pro v3.0.0.
 Builds both the Standalone Single-file EXE and the Portable ZIP distribution,
-computes SHA256 checksums, and prepares artifacts for GitHub Releases.
+runs live window verification, computes SHA256 checksums, and prepares artifacts.
 """
 
 import os
 import sys
+import time
 import shutil
 import hashlib
 import subprocess
@@ -57,6 +58,58 @@ def clean_dirs():
     print("[OK] Directories cleaned.\n")
 
 
+def verify_executable(exe_path: Path):
+    """Launch the executable and verify the GUI window opens with no error dialogs."""
+    print(f"Verifying runtime execution of {exe_path.name}...")
+    import psutil
+    import ctypes
+    user32 = ctypes.windll.user32
+
+    proc = subprocess.Popen([str(exe_path)])
+    time.sleep(2.5)
+
+    pids = [proc.pid]
+    try:
+        parent = psutil.Process(proc.pid)
+        pids += [c.pid for c in parent.children(recursive=True)]
+    except Exception:
+        pass
+
+    window_titles = []
+    def enum_proc(hwnd, lParam):
+        pid = ctypes.c_ulong()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value in pids:
+            length = user32.GetWindowTextLengthW(hwnd)
+            buff = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(hwnd, buff, length + 1)
+            if buff.value:
+                window_titles.append(buff.value)
+        return True
+
+    WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+    user32.EnumWindows(WNDENUMPROC(enum_proc), 0)
+
+    # Terminate tested processes
+    for pid in pids:
+        try:
+            psutil.Process(pid).kill()
+        except Exception:
+            pass
+
+    for title in window_titles:
+        if "unhandled exception" in title.lower() or "error" in title.lower():
+            print(f"[FAIL] Error dialog detected in {exe_path.name}: {title}")
+            sys.exit(1)
+
+    has_main = any("skinrate" in t.lower() for t in window_titles)
+    if not has_main:
+        print(f"[FAIL] Main window for {exe_path.name} was not detected! Windows found: {window_titles}")
+        sys.exit(1)
+
+    print(f"[OK] {exe_path.name} opened main window '{[t for t in window_titles if 'skinrate' in t.lower()][0]}' with 0 errors.\n")
+
+
 def build_single_exe():
     print("=" * 60)
     print("STEP 3: Building Standalone Single EXE...")
@@ -76,10 +129,15 @@ def build_single_exe():
 
     src_exe = DIST_DIR / "SkinRate Calculator.exe"
     target_exe = DIST_DIR / f"SkinRate-Calculator-v{VERSION}-Windows.exe"
+    root_exe = ROOT_DIR / "SkinRate Calculator.exe"
     if src_exe.exists():
-        # Keep both convenient names
+        # Copy to dist/ with version tag
         shutil.copy2(src_exe, target_exe)
-        print(f"[OK] Standalone EXE generated: {target_exe.name} ({target_exe.stat().st_size / (1024*1024):.2f} MB)\n")
+        # Copy directly to main project folder as requested
+        shutil.copy2(src_exe, root_exe)
+        print(f"[OK] Standalone EXE generated: {target_exe.name} ({target_exe.stat().st_size / (1024*1024):.2f} MB)")
+        print(f"[OK] Placed convenient EXE in main folder: {root_exe.name}")
+        verify_executable(src_exe)
     else:
         print(f"[FAIL] Output executable not found at {src_exe}")
         sys.exit(1)
@@ -105,6 +163,10 @@ def build_portable_zip():
     if not folder_dir.exists():
         print(f"[FAIL] Output folder not found at {folder_dir}")
         sys.exit(1)
+
+    inner_exe = folder_dir / "SkinRate Calculator.exe"
+    if inner_exe.exists():
+        verify_executable(inner_exe)
 
     zip_path = DIST_DIR / f"SkinRate-Calculator-v{VERSION}-Portable.zip"
     print(f"Packaging {folder_dir.name} into {zip_path.name}...")
@@ -136,7 +198,7 @@ def generate_checksums():
 
 def print_summary():
     print("=" * 60)
-    print(">>> RELEASE BUILD SUCCESSFUL! <<<")
+    print(">>> RELEASE BUILD SUCCESSFUL & VERIFIED! <<<")
     print("=" * 60)
     print(f"Artifacts ready in: {DIST_DIR}")
     for item in DIST_DIR.glob("*"):

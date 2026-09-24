@@ -1,13 +1,13 @@
 """
 SkinRate Calculator Pro - v3.0.0
-The Ultimate CS2 & Steam Wallet Rate Calculator for Bangladeshi Traders.
+The Ultimate CS2 Skins & Steam Wallet Rate Calculator for Bangladeshi Traders.
 
 Features:
-- Professional Top Application Toolbar with instant tab switching
-- Exact Steam Market 15% Community Fee Calculator (Valve 5% + Game 10%)
-- Item Rate & Wallet Rate Transfers with MFS Cashout (bKash Agent, Priyo, Nagad)
+- Dedicated Top Application Header & Mode Navigation Bar
+- Unified Skin & Steam Wallet Rate Transfer Calculation (Normal rate: 85/$)
+- MFS Cashout (bKash Agent 1.85%, bKash Priyo 1.49%, Nagad App 1.25%)
+- 15% Steam Community Market Tax (+15% / -15%)
 - Reverse Calculator (BDT Budget -> USD Skins/Wallet)
-- CS2 Skin Flipping & ROI Profit Margin Calculator
 - Rate Matrix & Live Cheat Sheet ($1 to $1000)
 - 1-Click Formatted Trade Slip Exporter for Discord & Facebook
 - Persistent Preferences & Calculation History
@@ -41,7 +41,7 @@ from skinrate.theme import THEMES, FONTS, shade
 from skinrate.config import ConfigManager
 from skinrate.widgets import ModernButton, PillTabBar
 from skinrate.dialogs import SettingsDialog, HistoryDialog, TradeSlipDialog, AboutDialog
-from skinrate.views import StandardView, ReverseView, SteamView, MatrixView
+from skinrate.views import StandardView, ReverseView, MatrixView
 
 
 def resource_path(relative_path: str) -> Path:
@@ -53,7 +53,7 @@ def resource_path(relative_path: str) -> Path:
 class SkinRateApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.withdraw()  # Hide window while building to prevent flicker
+        self.withdraw()
 
         self.config_manager = ConfigManager()
         self.current_theme_name = self.config_manager.get("theme", "dark")
@@ -61,10 +61,8 @@ class SkinRateApp(tk.Tk):
 
         self.title(f"{__app_name__} v{__version__}")
         self.configure(bg=self.theme["bg_app"])
-        self.minsize(980, 640)
-
-        # Set default geometry
-        self.geometry("1060x700")
+        self.minsize(900, 580)
+        self.geometry("980x640")
 
         # Set window icon
         icon_path = resource_path("assets/skinrate.ico")
@@ -80,179 +78,169 @@ class SkinRateApp(tk.Tk):
         self._build_ui()
         self._bind_shortcuts()
 
-        # Reveal window smoothly
         self.update_idletasks()
         self.deiconify()
 
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
 
-        self._build_top_toolbar()
+        self._build_top_header()
+        self._build_sub_navbar()
         self._build_content_area()
         self._build_bottom_statusbar()
 
-    def _build_top_toolbar(self):
-        """Build professional top toolbar like modern desktop apps."""
+    def _build_top_header(self):
+        """Top bar with Brand on the left and utility buttons on the right."""
         toolbar_bg = self.theme["bg_toolbar"]
         text_main = self.theme["text_main"]
-        text_muted = self.theme["text_muted"]
-        primary = self.theme["primary"]
 
-        self.toolbar = tk.Frame(self, bg=toolbar_bg, bd=0, padx=16, pady=8)
-        self.toolbar.grid(row=0, column=0, sticky="ew")
-        self.toolbar.grid_columnconfigure(1, weight=1)
+        self.header = tk.Frame(self, bg=toolbar_bg, bd=0, padx=20, pady=8)
+        self.header.grid(row=0, column=0, sticky="ew")
+        self.header.grid_columnconfigure(0, weight=1)
 
-        # ---- Left: App Logo & Brand ----
-        brand_frame = tk.Frame(self.toolbar, bg=toolbar_bg)
-        brand_frame.grid(row=0, column=0, sticky="w")
+        # Brand (Left)
+        brand = tk.Frame(self.header, bg=toolbar_bg)
+        brand.grid(row=0, column=0, sticky="w")
 
-        logo_box = tk.Label(
-            brand_frame,
+        logo = tk.Label(
+            brand,
             text="SR",
-            font=("Segoe UI", 13, "bold"),
+            font=("Segoe UI", 12, "bold"),
             bg="#2563eb",
             fg="#ffffff",
-            padx=8,
-            pady=3,
+            padx=7,
+            pady=2,
         )
-        logo_box.pack(side="left", padx=(0, 10))
-
-        title_box = tk.Frame(brand_frame, bg=toolbar_bg)
-        title_box.pack(side="left")
+        logo.pack(side="left", padx=(0, 10))
 
         tk.Label(
-            title_box,
-            text="SkinRate",
-            font=("Segoe UI", 15, "bold"),
+            brand,
+            text="SkinRate Calculator",
+            font=("Segoe UI", 14, "bold"),
             bg=toolbar_bg,
             fg=text_main,
         ).pack(side="left")
 
-        version_badge = tk.Label(
-            title_box,
-            text="PRO v3.0",
+        tk.Label(
+            brand,
+            text="v3.0",
             font=FONTS["badge"],
-            bg=self.theme.get("amber", "#f59e0b"),
-            fg="#0f172a",
+            bg=shade(toolbar_bg, 14),
+            fg="#38bdf8",
             padx=6,
-            pady=1,
-        )
-        version_badge.pack(side="left", padx=(8, 0))
+            pady=2,
+        ).pack(side="left", padx=(8, 0))
 
-        # ---- Center: Mode Switcher Tab Bar ----
-        tab_container = tk.Frame(self.toolbar, bg=toolbar_bg)
-        tab_container.grid(row=0, column=1)
+        # Utilities (Right)
+        actions = tk.Frame(self.header, bg=toolbar_bg)
+        actions.grid(row=0, column=1, sticky="e")
 
-        self.tab_bar = PillTabBar(
-            tab_container,
-            tabs=[
-                ("standard", "⚡ Standard ($ ➔ ৳)"),
-                ("reverse", "⇄ Reverse (৳ ➔ $)"),
-                ("steam", "🏷️ Steam Market & Profit"),
-                ("matrix", "📊 Rate Cheat Sheet"),
-            ],
-            on_change=self.switch_tab,
-            bg=toolbar_bg,
-            active_bg=primary,
-            inactive_fg=text_muted,
-            active_fg="#ffffff",
-        )
-        self.tab_bar.pack()
-
-        # ---- Right: Quick Action Buttons ----
-        actions_frame = tk.Frame(self.toolbar, bg=toolbar_bg)
-        actions_frame.grid(row=0, column=2, sticky="e")
-
-        # Theme toggle button
-        theme_icon = "☀️ Light" if self.current_theme_name == "dark" else "🌙 Dark"
+        theme_text = "☀️ Light" if self.current_theme_name == "dark" else "🌙 Dark"
         self.theme_btn = ModernButton(
-            actions_frame,
-            text=theme_icon,
+            actions,
+            text=theme_text,
             command=self.toggle_theme,
             width=76,
-            height=30,
-            radius=6,
-            bg_color=shade(toolbar_bg, 20),
-            hover_color=shade(toolbar_bg, 35),
-            text_color=text_main,
-            font=FONTS["small_bold"],
+            height=28,
+            radius=4,
+            bg_color=self.theme.get("btn_neutral_bg", "#222a3a"),
+            hover_color=self.theme.get("btn_neutral_hover", "#2d374d"),
+            text_color=self.theme.get("btn_neutral_fg", "#e2e8f0"),
+            font=FONTS["badge"],
             parent_bg=toolbar_bg,
         )
         self.theme_btn.pack(side="left", padx=3)
 
-        # History button
         self.hist_btn = ModernButton(
-            actions_frame,
+            actions,
             text="📜 History",
             command=self.open_history,
-            width=80,
-            height=30,
-            radius=6,
-            bg_color=shade(toolbar_bg, 20),
-            hover_color=shade(toolbar_bg, 35),
-            text_color=text_main,
-            font=FONTS["small_bold"],
+            width=76,
+            height=28,
+            radius=4,
+            bg_color=self.theme.get("btn_neutral_bg", "#222a3a"),
+            hover_color=self.theme.get("btn_neutral_hover", "#2d374d"),
+            text_color=self.theme.get("btn_neutral_fg", "#e2e8f0"),
+            font=FONTS["badge"],
             parent_bg=toolbar_bg,
         )
         self.hist_btn.pack(side="left", padx=3)
 
-        # Trade Slip button
         self.slip_btn = ModernButton(
-            actions_frame,
+            actions,
             text="📋 Trade Slip",
             command=self.open_trade_slip,
-            width=92,
-            height=30,
-            radius=6,
-            bg_color=self.theme.get("success", "#10b981"),
-            hover_color=self.theme.get("success_hover", "#059669"),
+            width=90,
+            height=28,
+            radius=4,
+            bg_color="#10b981",
+            hover_color="#059669",
             text_color="#ffffff",
-            font=FONTS["small_bold"],
+            font=FONTS["badge"],
             parent_bg=toolbar_bg,
         )
         self.slip_btn.pack(side="left", padx=3)
 
-        # Settings button
         self.settings_btn = ModernButton(
-            actions_frame,
+            actions,
             text="⚙️",
             command=self.open_settings,
-            width=36,
-            height=30,
-            radius=6,
-            bg_color=shade(toolbar_bg, 20),
-            hover_color=shade(toolbar_bg, 35),
-            text_color=text_main,
-            font=FONTS["body_bold"],
+            width=34,
+            height=28,
+            radius=4,
+            bg_color=self.theme.get("btn_neutral_bg", "#222a3a"),
+            hover_color=self.theme.get("btn_neutral_hover", "#2d374d"),
+            text_color=self.theme.get("btn_neutral_fg", "#e2e8f0"),
+            font=FONTS["small_bold"],
             parent_bg=toolbar_bg,
         )
         self.settings_btn.pack(side="left", padx=3)
 
-        # About button
         self.about_btn = ModernButton(
-            actions_frame,
+            actions,
             text="ℹ️",
             command=self.open_about,
-            width=36,
-            height=30,
-            radius=6,
-            bg_color=shade(toolbar_bg, 20),
-            hover_color=shade(toolbar_bg, 35),
-            text_color=text_main,
-            font=FONTS["body_bold"],
+            width=34,
+            height=28,
+            radius=4,
+            bg_color=self.theme.get("btn_neutral_bg", "#222a3a"),
+            hover_color=self.theme.get("btn_neutral_hover", "#2d374d"),
+            text_color=self.theme.get("btn_neutral_fg", "#e2e8f0"),
+            font=FONTS["small_bold"],
             parent_bg=toolbar_bg,
         )
         self.about_btn.pack(side="left", padx=3)
 
+    def _build_sub_navbar(self):
+        """Dedicated mode navigation bar positioned cleanly in row 1 with zero risk of cut-off."""
+        nav_bg = self.theme["bg_nav"]
+        self.navbar = tk.Frame(self, bg=nav_bg, bd=0, padx=16, pady=5)
+        self.navbar.grid(row=1, column=0, sticky="ew")
+
+        # 3 clean tabs
+        self.tab_bar = PillTabBar(
+            self.navbar,
+            tabs=[
+                ("standard", "⚡ Rate Calculator"),
+                ("reverse", "⇄ Reverse Calculator (৳ ➔ $)"),
+                ("matrix", "📊 Rate Cheat Sheet"),
+            ],
+            on_change=self.switch_tab,
+            bg=nav_bg,
+            active_bg="#2563eb",
+            inactive_fg=self.theme["text_muted"],
+            active_fg="#ffffff",
+        )
+        self.tab_bar.pack()
+
     def _build_content_area(self):
         """Container for switching between view tabs."""
         self.content_container = tk.Frame(self, bg=self.theme["bg_app"])
-        self.content_container.grid(row=1, column=0, sticky="nsew")
+        self.content_container.grid(row=2, column=0, sticky="nsew")
         self.content_container.grid_columnconfigure(0, weight=1)
         self.content_container.grid_rowconfigure(0, weight=1)
 
-        # Initialize tab views
         self.views: Dict[str, tk.Frame] = {}
 
         self.views["standard"] = StandardView(
@@ -270,13 +258,6 @@ class SkinRateApp(tk.Tk):
             on_status=self.set_status,
         )
 
-        self.views["steam"] = SteamView(
-            self.content_container,
-            config=self.config_manager,
-            theme=self.theme,
-            on_status=self.set_status,
-        )
-
         self.views["matrix"] = MatrixView(
             self.content_container,
             config=self.config_manager,
@@ -284,21 +265,20 @@ class SkinRateApp(tk.Tk):
             on_status=self.set_status,
         )
 
-        # Display initial tab
         self.views["standard"].grid(row=0, column=0, sticky="nsew")
 
     def _build_bottom_statusbar(self):
         """Bottom status bar with message on left and shortcuts on right."""
-        status_bg = self.theme.get("status_bg", "#0c1320")
+        status_bg = self.theme.get("statusbar_bg", "#0c1017")
         text_muted = self.theme["text_muted"]
 
-        self.statusbar = tk.Frame(self, bg=status_bg, padx=16, pady=5)
-        self.statusbar.grid(row=2, column=0, sticky="ew")
+        self.statusbar = tk.Frame(self, bg=status_bg, padx=16, pady=4)
+        self.statusbar.grid(row=3, column=0, sticky="ew")
         self.statusbar.grid_columnconfigure(0, weight=1)
 
         self.status_label = tk.Label(
             self.statusbar,
-            text="Ready. Enter Amount ($). Rates auto-fill from saved defaults.",
+            text="Ready. Enter Amount ($). Rate defaults to 85/$.",
             font=FONTS["small"],
             bg=status_bg,
             fg=text_muted,
@@ -308,10 +288,10 @@ class SkinRateApp(tk.Tk):
 
         shortcuts_label = tk.Label(
             self.statusbar,
-            text="⚡ Shortcuts: [Enter] Calc | [Esc] Clear | [Ctrl+C] Trade Slip | [Ctrl+T] Theme | [Ctrl+1..4] Tabs",
+            text="[Enter] Calc  |  [Esc] Clear  |  [Ctrl+C] Trade Slip  |  [Ctrl+T] Theme  |  [Ctrl+1..3] Tabs",
             font=FONTS["badge"],
             bg=status_bg,
-            fg=self.theme.get("text_dim", "#64748b"),
+            fg=self.theme.get("text_dim", "#526075"),
             anchor="e",
         )
         shortcuts_label.grid(row=0, column=1, sticky="e")
@@ -348,7 +328,6 @@ class SkinRateApp(tk.Tk):
         new_theme = "light" if self.current_theme_name == "dark" else "dark"
         self.current_theme_name = new_theme
         self.config_manager.set("theme", new_theme)
-        # Restart or rebuild UI with new theme
         self.theme = THEMES[new_theme]
         self._rebuild_all_views()
 
@@ -381,16 +360,15 @@ class SkinRateApp(tk.Tk):
         if std_view and hasattr(std_view, "set_inputs"):
             std_view.set_inputs(
                 amount=item.get("amount_usd", 0.0),
-                item_rate=item.get("item_rate"),
-                wallet_rate=item.get("wallet_rate"),
+                rate=item.get("rate"),
             )
-        self.set_status(f"✓ Restored calculation from {item.get('timestamp')}", self.theme.get("primary", "#3b82f6"))
+        self.set_status(f"✓ Restored calculation from {item.get('timestamp')}", self.theme.get("primary", "#38bdf8"))
 
     def open_trade_slip(self):
         std_view = self.views.get("standard")
         quote = std_view.latest_quote if std_view else None
         if not quote:
-            self.set_status("Please perform a calculation first before exporting trade slip.", self.theme.get("danger", "#ef4444"))
+            self.set_status("Please perform a calculation first before exporting trade slip.", self.theme.get("danger", "#f43f5e"))
             return
         TradeSlipDialog(self, quote, self.config_manager, self.theme)
 
@@ -410,8 +388,7 @@ class SkinRateApp(tk.Tk):
         self.bind("<Control-S>", lambda _e: self.open_settings())
         self.bind("<Control-Key-1>", lambda _e: self.tab_bar.select_tab("standard"))
         self.bind("<Control-Key-2>", lambda _e: self.tab_bar.select_tab("reverse"))
-        self.bind("<Control-Key-3>", lambda _e: self.tab_bar.select_tab("steam"))
-        self.bind("<Control-Key-4>", lambda _e: self.tab_bar.select_tab("matrix"))
+        self.bind("<Control-Key-3>", lambda _e: self.tab_bar.select_tab("matrix"))
 
     def _on_enter_pressed(self, _event=None):
         active = self.views.get(self.active_tab_id)
@@ -424,7 +401,6 @@ class SkinRateApp(tk.Tk):
             active.clear_fields()
 
     def _on_ctrl_c(self, _event=None):
-        # If user is in an Entry widget with text selected, let standard copy happen
         focus = self.focus_get()
         if isinstance(focus, tk.Entry):
             try:

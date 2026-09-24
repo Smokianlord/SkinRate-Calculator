@@ -1,6 +1,7 @@
 """
 Reverse Calculator Tab:
-Calculates how much USD skin/wallet can be bought with a given BDT budget or cashout target.
+Calculates how much USD skin/wallet can be bought with a given BDT budget.
+Clean, modern aesthetic with zero clutter.
 """
 
 from __future__ import annotations
@@ -13,7 +14,6 @@ from skinrate.engine import (
     format_bdt,
     format_usd,
     calculate_reverse,
-    steam_calc_seller_receives,
     TAKA,
 )
 
@@ -26,7 +26,7 @@ class ReverseView(tk.Frame):
         theme: dict,
         on_status: Optional[Callable[[str, str], None]] = None,
     ):
-        super().__init__(master, bg=theme.get("bg_app", "#0b0f17"))
+        super().__init__(master, bg=theme.get("bg_app", "#0f131c"))
         self.config = config
         self.theme = theme
         self.on_status = on_status
@@ -37,86 +37,69 @@ class ReverseView(tk.Frame):
         self.reset_to_defaults()
 
     def _build_ui(self):
-        bg = self.theme.get("bg_app", "#0b0f17")
-        card_bg = self.theme.get("bg_card", "#161f30")
-        inner_bg = self.theme.get("bg_card_inner", "#1d293d")
-        input_bg = self.theme.get("bg_input", "#0f1724")
+        bg = self.theme.get("bg_app", "#0f131c")
+        card_bg = self.theme.get("bg_card", "#181e2b")
+        inner_bg = self.theme.get("bg_card_inner", "#202738")
+        input_bg = self.theme.get("bg_input", "#111622")
         text_main = self.theme.get("text_main", "#f8fafc")
-        text_muted = self.theme.get("text_muted", "#94a3b8")
-        primary = self.theme.get("primary", "#3b82f6")
-        purple = self.theme.get("purple", "#8b5cf6")
-        success = self.theme.get("success", "#10b981")
+        text_muted = self.theme.get("text_muted", "#8593a8")
+        primary = self.theme.get("primary", "#38bdf8")
+        steam_acc = self.theme.get("steam_accent", "#06b6d4")
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        # ----------------- Input Card -----------------
-        input_card = tk.Frame(self, bg=card_bg, padx=16, pady=14, bd=1, relief="solid")
-        input_card.grid(row=0, column=0, sticky="ew", padx=16, pady=(12, 10))
-        input_card.grid_columnconfigure((0, 1, 2), weight=1, uniform="reverse_inputs")
+        # ----------------- Input Card (2 Columns) -----------------
+        input_card = tk.Frame(self, bg=card_bg, padx=20, pady=14, bd=1, relief="solid")
+        input_card.grid(row=0, column=0, sticky="ew", padx=20, pady=(12, 10))
+        input_card.grid_columnconfigure((0, 1), weight=1, uniform="reverse_inputs")
 
         # Column 0: BDT Amount
         col0 = tk.Frame(input_card, bg=card_bg)
-        col0.grid(row=0, column=0, sticky="ew", padx=6)
+        col0.grid(row=0, column=0, sticky="ew", padx=(0, 12))
         col0.grid_columnconfigure(0, weight=1)
 
-        tk.Label(col0, text="💰 BDT Budget / Cash", font=FONTS["body_bold"], bg=card_bg, fg=text_main).pack(anchor="w", pady=(0, 4))
+        h0 = tk.Frame(col0, bg=card_bg)
+        h0.pack(fill="x", pady=(0, 4))
+        tk.Label(h0, text="BDT Budget / Cash", font=FONTS["body_bold"], bg=card_bg, fg=text_main).pack(side="left")
+        tk.Label(h0, text="BDT ৳", font=FONTS["badge"], bg=shade(card_bg, 14), fg=primary, padx=6, pady=1).pack(side="right")
+
         self.bdt_entry = tk.Entry(col0, font=FONTS["value_lg"], bg=input_bg, fg=text_main, insertbackground=text_main, bd=1, relief="solid")
         self.bdt_entry.pack(fill="x", ipady=5)
         self.bdt_entry.bind("<KeyRelease>", self._on_input_changed)
 
         chips0 = tk.Frame(col0, bg=card_bg)
         chips0.pack(fill="x", pady=(6, 0))
-        for chip_val in ["1000", "2500", "5000", "10000", "20000"]:
-            ChipButton(
-                chips0, text=f"৳{chip_val}", command=lambda v=chip_val: self._set_bdt(v),
-                parent_bg=card_bg, width=48
-            ).pack(side="left", padx=2)
+        for chip_val in ["500", "1000", "2500", "5000", "10000"]:
+            ChipButton(chips0, text=f"৳{chip_val}", command=lambda v=chip_val: self._set_bdt(v), parent_bg=card_bg, width=48).pack(side="left", padx=2)
 
-        # Column 1: Item Rate
+        # Column 1: Rate
         col1 = tk.Frame(input_card, bg=card_bg)
-        col1.grid(row=0, column=1, sticky="ew", padx=6)
+        col1.grid(row=0, column=1, sticky="ew", padx=(12, 0))
         col1.grid_columnconfigure(0, weight=1)
 
-        tk.Label(col1, text="💎 Item Rate (৳/$)", font=FONTS["body_bold"], bg=card_bg, fg=text_main).pack(anchor="w", pady=(0, 4))
-        self.item_rate_entry = tk.Entry(col1, font=FONTS["value_lg"], bg=input_bg, fg=text_main, insertbackground=text_main, bd=1, relief="solid")
-        self.item_rate_entry.pack(fill="x", ipady=5)
-        self.item_rate_entry.bind("<KeyRelease>", self._on_input_changed)
+        h1 = tk.Frame(col1, bg=card_bg)
+        h1.pack(fill="x", pady=(0, 4))
+        tk.Label(h1, text="Rate (৳/$)", font=FONTS["body_bold"], bg=card_bg, fg=text_main).pack(side="left")
+        tk.Label(h1, text="Normal: 85/$", font=FONTS["badge"], bg=shade(card_bg, 14), fg="#38bdf8", padx=6, pady=1).pack(side="right")
+
+        self.rate_entry = tk.Entry(col1, font=FONTS["value_lg"], bg=input_bg, fg=text_main, insertbackground=text_main, bd=1, relief="solid")
+        self.rate_entry.pack(fill="x", ipady=5)
+        self.rate_entry.bind("<KeyRelease>", self._on_input_changed)
 
         chips1 = tk.Frame(col1, bg=card_bg)
         chips1.pack(fill="x", pady=(6, 0))
-        for chip_val in ["118", "120", "121", "122"]:
-            ChipButton(
-                chips1, text=chip_val, command=lambda v=chip_val: self._set_item_rate(v),
-                parent_bg=card_bg, width=44
-            ).pack(side="left", padx=2)
-
-        # Column 2: Wallet Rate
-        col2 = tk.Frame(input_card, bg=card_bg)
-        col2.grid(row=0, column=2, sticky="ew", padx=6)
-        col2.grid_columnconfigure(0, weight=1)
-
-        tk.Label(col2, text="💼 Wallet Rate (৳/$)", font=FONTS["body_bold"], bg=card_bg, fg=text_main).pack(anchor="w", pady=(0, 4))
-        self.wallet_rate_entry = tk.Entry(col2, font=FONTS["value_lg"], bg=input_bg, fg=text_main, insertbackground=text_main, bd=1, relief="solid")
-        self.wallet_rate_entry.pack(fill="x", ipady=5)
-        self.wallet_rate_entry.bind("<KeyRelease>", self._on_input_changed)
-
-        chips2 = tk.Frame(col2, bg=card_bg)
-        chips2.pack(fill="x", pady=(6, 0))
-        for chip_val in ["114", "116", "118", "120"]:
-            ChipButton(
-                chips2, text=chip_val, command=lambda v=chip_val: self._set_wallet_rate(v),
-                parent_bg=card_bg, width=44
-            ).pack(side="left", padx=2)
+        for chip_val in ["80", "82", "85", "87", "90"]:
+            ChipButton(chips1, text=chip_val, command=lambda v=chip_val: self._set_rate(v), parent_bg=card_bg, width=44).pack(side="left", padx=2)
 
         # Mode Selection Row
         mode_strip = tk.Frame(input_card, bg=card_bg)
-        mode_strip.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(14, 0))
+        mode_strip.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(12, 0))
 
-        tk.Label(mode_strip, text="MFS Fee Mode:", font=FONTS["body_bold"], bg=card_bg, fg=text_main).pack(side="left", padx=(0, 10))
+        tk.Label(mode_strip, text="MFS Cashout Deduction:", font=FONTS["body_bold"], bg=card_bg, fg=text_main).pack(side="left", padx=(0, 8))
 
         for mode_id, mode_label in [
-            ("none", "Direct (No Fee)"),
+            ("none", "Direct (0%)"),
             ("agent", "bKash Agent (1.85%)"),
             ("priyo", "bKash Priyo (1.49%)"),
             ("nagad", "Nagad App (1.25%)"),
@@ -134,56 +117,58 @@ class ReverseView(tk.Frame):
                 activebackground=card_bg,
                 activeforeground=text_main,
             )
-            rb.pack(side="left", padx=6)
+            rb.pack(side="left", padx=4)
 
         ModernButton(
             mode_strip,
             text="⚡ Calculate",
             command=self.calculate,
-            width=120,
-            height=32,
-            bg_color=success,
+            width=116,
+            height=30,
+            bg_color="#2563eb",
             parent_bg=card_bg,
-            font=FONTS["body_bold"],
+            font=FONTS["small_bold"],
         ).pack(side="right")
 
-        # ----------------- Results Grid -----------------
+        # ----------------- Results Grid (2 Balanced Cards) -----------------
         results_grid = tk.Frame(self, bg=bg)
-        results_grid.grid(row=1, column=0, sticky="nsew", padx=16, pady=(0, 12))
-        results_grid.grid_columnconfigure((0, 1), weight=1, uniform="reverse_results")
+        results_grid.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 14))
+        results_grid.grid_columnconfigure((0, 1), weight=1, uniform="reverse_results_2col")
         results_grid.grid_rowconfigure(0, weight=1)
 
-        # Card 1: Skins you can buy
-        self.item_card = self._build_result_card(
-            results_grid, col=0, title="💎 CS2 Skin Purchase Power",
-            subtitle="Skin equivalent at current item rate", accent=primary,
-            keys=["USD Skin Value ($)", "Net BDT Used", "Fee Deducted", "Steam Market Listing Price"]
+        # Card 1: USD Purchase Value
+        self.usd_rows = self._build_result_card(
+            results_grid, col=0, title="💎 USD Purchase Power",
+            subtitle="Equivalent skin & wallet balance value", accent=primary,
+            keys=["USD Value ($)", "Net BDT Used", "MFS Fee Deducted"]
         )
 
-        # Card 2: Wallet you can buy
-        self.wallet_card = self._build_result_card(
-            results_grid, col=1, title="💼 Steam Wallet Balance Power",
-            subtitle="Wallet equivalent at current wallet rate", accent=purple,
-            keys=["USD Wallet Value ($)", "Net BDT Used", "Fee Deducted", "Extra USD vs Item"]
+        # Card 2: Steam Tax (15%)
+        self.tax_rows = self._build_result_card(
+            results_grid, col=1, title="🏷️ Steam Market Tax (15%)",
+            subtitle="Listing and received amounts with 15% tax", accent=steam_acc,
+            keys=["With 15% Tax", "Without 15% Tax"]
         )
 
     def _build_result_card(self, master, col: int, title: str, subtitle: str, accent: str, keys: list[str]):
-        card_bg = self.theme.get("bg_card", "#161f30")
-        inner_bg = self.theme.get("bg_card_inner", "#1d293d")
+        card_bg = self.theme.get("bg_card", "#181e2b")
+        inner_bg = self.theme.get("bg_card_inner", "#202738")
         text_main = self.theme.get("text_main", "#f8fafc")
-        text_muted = self.theme.get("text_muted", "#94a3b8")
+        text_muted = self.theme.get("text_muted", "#8593a8")
 
         card = tk.Frame(master, bg=card_bg, bd=1, relief="solid")
         card.grid(row=0, column=col, sticky="nsew", padx=6)
         card.grid_columnconfigure(0, weight=1)
 
-        banner = tk.Frame(card, bg=accent, padx=14, pady=10)
-        banner.pack(fill="x")
+        accent_bar = tk.Frame(card, bg=accent, height=3)
+        accent_bar.pack(fill="x")
 
-        tk.Label(banner, text=title, font=FONTS["h2"], bg=accent, fg="#ffffff").pack(anchor="w")
-        tk.Label(banner, text=subtitle, font=FONTS["small"], bg=accent, fg="#e0f2fe").pack(anchor="w")
+        head = tk.Frame(card, bg=card_bg, padx=16, pady=12)
+        head.pack(fill="x")
+        tk.Label(head, text=title, font=FONTS["h2"], bg=card_bg, fg=text_main).pack(anchor="w")
+        tk.Label(head, text=subtitle, font=FONTS["small"], bg=card_bg, fg=text_muted).pack(anchor="w", pady=(1, 0))
 
-        body = tk.Frame(card, bg=card_bg, padx=12, pady=12)
+        body = tk.Frame(card, bg=card_bg, padx=14, pady=8)
         body.pack(fill="both", expand=True)
 
         rows = {}
@@ -197,7 +182,7 @@ class ReverseView(tk.Frame):
                 muted_color=text_muted,
                 on_copy_feedback=self._on_copy_feedback,
             )
-            row.pack(fill="x", pady=5)
+            row.pack(fill="x", pady=4)
             rows[key] = row
         return rows
 
@@ -210,14 +195,9 @@ class ReverseView(tk.Frame):
         self.bdt_entry.insert(0, val)
         self.calculate()
 
-    def _set_item_rate(self, val: str):
-        self.item_rate_entry.delete(0, tk.END)
-        self.item_rate_entry.insert(0, val)
-        self.calculate()
-
-    def _set_wallet_rate(self, val: str):
-        self.wallet_rate_entry.delete(0, tk.END)
-        self.wallet_rate_entry.insert(0, val)
+    def _set_rate(self, val: str):
+        self.rate_entry.delete(0, tk.END)
+        self.rate_entry.insert(0, val)
         self.calculate()
 
     def _on_input_changed(self, _event=None):
@@ -225,71 +205,37 @@ class ReverseView(tk.Frame):
             return
         if self._debounce_id:
             self.after_cancel(self._debounce_id)
-        self._debounce_id = self.after(150, self.calculate)
+        self._debounce_id = self.after(120, self.calculate)
 
     def reset_to_defaults(self):
-        default_item = self.config.get("default_item_rate", 120.0)
-        default_wallet = self.config.get("default_wallet_rate", 118.0)
-        self.item_rate_entry.delete(0, tk.END)
-        self.item_rate_entry.insert(0, str(default_item))
-        self.wallet_rate_entry.delete(0, tk.END)
-        self.wallet_rate_entry.insert(0, str(default_wallet))
+        default_r = self.config.get("default_rate", 85.0)
+        self.rate_entry.delete(0, tk.END)
+        self.rate_entry.insert(0, str(default_r))
 
     def calculate(self):
         try:
             bdt_val = clean_input(self.bdt_entry.get())
             if bdt_val is None:
-                for group in (self.item_card, self.wallet_card):
+                for group in (self.usd_rows, self.tax_rows):
                     for row in group.values():
                         row.set_value("-", is_active=False)
                 return
 
-            item_rate = clean_input(self.item_rate_entry.get())
-            wallet_rate = clean_input(self.wallet_rate_entry.get())
+            rate = clean_input(self.rate_entry.get()) or 85.0
             mode = self.fee_mode_var.get()
             use_comma = self.config.get("use_comma_bdt", False)
             sym = self.config.get("currency_symbol", TAKA)
 
-            # Item calculation
-            item_usd = 0.0
-            if item_rate:
-                res_it = calculate_reverse(bdt_val, item_rate, fee_mode=mode)
-                item_usd = res_it["usd_value"]
-                self.item_card["USD Skin Value ($)"].set_value(format_usd(item_usd))
-                self.item_card["Net BDT Used"].set_value(format_bdt(res_it["net_bdt"], sym, use_comma))
-                self.item_card["Fee Deducted"].set_value(format_bdt(res_it["fee_amount"], sym, use_comma))
+            res = calculate_reverse(bdt_val, rate, fee_mode=mode)
+            self.usd_rows["USD Value ($)"].set_value(format_usd(res["usd_value"]))
+            self.usd_rows["Net BDT Used"].set_value(format_bdt(res["net_bdt"], sym, use_comma))
+            self.usd_rows["MFS Fee Deducted"].set_value(format_bdt(res["fee_amount"], sym, use_comma))
 
-                # What should buyer list item on Steam for to receive item_usd?
-                cents = int(round(item_usd * 100))
-                buyer_cents, _, _ = steam_calc_seller_receives(cents)
-                self.item_card["Steam Market Listing Price"].set_value(format_usd(buyer_cents / 100.0))
-            else:
-                for row in self.item_card.values():
-                    row.set_value("Enter item rate", is_active=False)
-
-            # Wallet calculation
-            wallet_usd = 0.0
-            if wallet_rate:
-                res_wt = calculate_reverse(bdt_val, wallet_rate, fee_mode=mode)
-                wallet_usd = res_wt["usd_value"]
-                self.wallet_card["USD Wallet Value ($)"].set_value(format_usd(wallet_usd))
-                self.wallet_card["Net BDT Used"].set_value(format_bdt(res_wt["net_bdt"], sym, use_comma))
-                self.wallet_card["Fee Deducted"].set_value(format_bdt(res_wt["fee_amount"], sym, use_comma))
-
-                if item_usd > 0:
-                    diff_usd = wallet_usd - item_usd
-                    if diff_usd > 0:
-                        self.wallet_card["Extra USD vs Item"].set_value(f"+{format_usd(diff_usd)}")
-                    else:
-                        self.wallet_card["Extra USD vs Item"].set_value(format_usd(diff_usd))
-                else:
-                    self.wallet_card["Extra USD vs Item"].set_value("-")
-            else:
-                for row in self.wallet_card.values():
-                    row.set_value("Enter wallet rate", is_active=False)
+            self.tax_rows["With 15% Tax"].set_value(format_usd(res["with_15_tax"]))
+            self.tax_rows["Without 15% Tax"].set_value(format_usd(res["without_15_tax"]))
 
             if self.on_status:
                 self.on_status(f"✓ Reverse calculated for {format_bdt(bdt_val, sym, use_comma)}", self.theme.get("success", "#10b981"))
         except ValueError as exc:
             if self.on_status:
-                self.on_status(str(exc), self.theme.get("danger", "#ef4444"))
+                self.on_status(str(exc), self.theme.get("danger", "#f43f5e"))

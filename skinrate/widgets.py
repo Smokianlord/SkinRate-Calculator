@@ -1,6 +1,6 @@
 """
-Modern UI widgets for SkinRate Calculator Pro.
-Custom-drawn high-DPI widgets with smooth rounded shapes, hover states, and animations.
+Refined, modern UI widgets for SkinRate Calculator Pro.
+Sleek, lightweight, high-DPI widgets with minimal visual noise and clean aesthetics.
 """
 
 from __future__ import annotations
@@ -15,10 +15,10 @@ def draw_rounded_rect(
     y1: float,
     x2: float,
     y2: float,
-    radius: float = 8.0,
+    radius: float = 6.0,
     **kwargs
 ) -> int:
-    """Draw a smooth anti-aliased rounded rectangle on a Tkinter canvas."""
+    """Draw a smooth anti-aliased rounded rectangle."""
     points = [
         x1 + radius, y1,
         x2 - radius, y1,
@@ -38,7 +38,7 @@ def draw_rounded_rect(
 
 class ModernButton(tk.Canvas):
     """
-    Modern button with smooth rounded corners, hover transitions, and press feedback.
+    Sleek, modern button with rounded corners, subtle borders, and smooth hover feedback.
     """
     def __init__(
         self,
@@ -46,15 +46,15 @@ class ModernButton(tk.Canvas):
         text: str = "",
         command: Optional[Callable] = None,
         *,
-        width: int = 140,
-        height: int = 38,
-        radius: int = 8,
+        width: int = 120,
+        height: int = 34,
+        radius: int = 6,
         bg_color: str = "#2563eb",
         hover_color: Optional[str] = None,
         active_color: Optional[str] = None,
         text_color: str = "#ffffff",
         font=FONTS["body_bold"],
-        parent_bg: str = "#161f30",
+        parent_bg: str = "#181e2b",
         border_color: Optional[str] = None,
         border_width: int = 0,
         cursor: str = "hand2",
@@ -75,8 +75,8 @@ class ModernButton(tk.Canvas):
         self.text = text
         self.command = command
         self.bg_color = bg_color
-        self.hover_color = hover_color or shade(bg_color, 20)
-        self.active_color = active_color or shade(bg_color, -20)
+        self.hover_color = hover_color or shade(bg_color, 18)
+        self.active_color = active_color or shade(bg_color, -18)
         self.current_color = self.bg_color
         self.text_color = text_color
         self.font = font
@@ -97,7 +97,7 @@ class ModernButton(tk.Canvas):
     def _draw(self):
         self.delete("all")
         y_offset = 1 if self.is_pressed else 0
-        pad = 2
+        pad = 1
         fill = self.active_color if self.is_pressed else (self.hover_color if self.is_hovered else self.current_color)
 
         draw_rounded_rect(
@@ -145,13 +145,14 @@ class ModernButton(tk.Canvas):
         self.text = new_text
         self._draw()
 
-    def update_colors(self, bg_color: str, parent_bg: str, text_color: str = "#ffffff"):
+    def update_colors(self, bg_color: str, parent_bg: str, text_color: Optional[str] = None):
         self.bg_color = bg_color
         self.current_color = bg_color
-        self.hover_color = shade(bg_color, 20)
-        self.active_color = shade(bg_color, -20)
+        self.hover_color = shade(bg_color, 18)
+        self.active_color = shade(bg_color, -18)
         self.parent_bg = parent_bg
-        self.text_color = text_color
+        if text_color:
+            self.text_color = text_color
         self.configure(bg=parent_bg)
         self._draw()
 
@@ -161,18 +162,18 @@ class ModernButton(tk.Canvas):
 
 
 class ChipButton(ModernButton):
-    """Compact preset chip button (e.g. +$10, 120, etc.)."""
+    """Compact preset chip."""
     def __init__(
         self,
         master,
         text: str,
         command: Optional[Callable] = None,
         *,
-        width: int = 56,
+        width: int = 50,
         height: int = 24,
-        bg_color: str = "#202c40",
-        text_color: str = "#93c5fd",
-        parent_bg: str = "#161f30",
+        bg_color: str = "#202738",
+        text_color: str = "#7dd3fc",
+        parent_bg: str = "#181e2b",
         font=FONTS["small_bold"],
     ):
         super().__init__(
@@ -181,10 +182,10 @@ class ChipButton(ModernButton):
             command=command,
             width=width,
             height=height,
-            radius=6,
+            radius=4,
             bg_color=bg_color,
-            hover_color=shade(bg_color, 25),
-            active_color=shade(bg_color, -15),
+            hover_color=shade(bg_color, 20),
+            active_color=shade(bg_color, -10),
             text_color=text_color,
             parent_bg=parent_bg,
             font=font,
@@ -193,15 +194,15 @@ class ChipButton(ModernButton):
 
 class PillTabBar(tk.Frame):
     """
-    Segmented top control tab bar.
+    Clean segmented mode tab bar.
     """
     def __init__(
         self,
         master,
-        tabs: List[Tuple[str, str]],  # [(id, label), ...]
+        tabs: List[Tuple[str, str]],
         on_change: Callable[[str], None],
         *,
-        bg: str = "#111827",
+        bg: str = "#131822",
         active_bg: str = "#2563eb",
         inactive_fg: str = "#94a3b8",
         active_fg: str = "#ffffff",
@@ -218,18 +219,18 @@ class PillTabBar(tk.Frame):
         self._build()
 
     def _build(self):
-        container = tk.Frame(self, bg=shade(self.bg, 10), padx=3, pady=3)
-        container.pack(fill="y")
+        container = tk.Frame(self, bg=shade(self.bg, 6), padx=3, pady=3, bd=1, relief="solid")
+        container.pack()
 
         for tab_id, label in self.tabs:
             is_active = (tab_id == self.active_id)
             btn = tk.Label(
                 container,
                 text=label,
-                font=FONTS["body_bold"],
-                bg=self.active_bg if is_active else shade(self.bg, 10),
+                font=FONTS["small_bold"],
+                bg=self.active_bg if is_active else shade(self.bg, 6),
                 fg=self.active_fg if is_active else self.inactive_fg,
-                padx=12,
+                padx=16,
                 pady=6,
                 cursor="hand2",
             )
@@ -251,22 +252,22 @@ class PillTabBar(tk.Frame):
         for tab_id, btn in self.buttons.items():
             is_active = (tab_id == self.active_id)
             btn.configure(
-                bg=self.active_bg if is_active else shade(self.bg, 10),
+                bg=self.active_bg if is_active else shade(self.bg, 6),
                 fg=self.active_fg if is_active else self.inactive_fg,
             )
 
     def _on_hover(self, btn: tk.Label, tab_id: str):
         if tab_id != self.active_id:
-            btn.configure(bg=shade(self.bg, 20), fg="#f8fafc")
+            btn.configure(bg=shade(self.bg, 14), fg="#f8fafc")
 
     def _on_leave(self, btn: tk.Label, tab_id: str):
         if tab_id != self.active_id:
-            btn.configure(bg=shade(self.bg, 10), fg=self.inactive_fg)
+            btn.configure(bg=shade(self.bg, 6), fg=self.inactive_fg)
 
 
 class ResultRow(tk.Frame):
     """
-    Row in a result card: Label + Value + Compact 1-Click Copy Button.
+    Clean, elegant result row: Label (left) + Value (right) + Minimalist Copy button.
     """
     def __init__(
         self,
@@ -274,13 +275,13 @@ class ResultRow(tk.Frame):
         title: str,
         initial_value: str = "-",
         *,
-        accent_color: str = "#3b82f6",
-        bg: str = "#1d293d",
+        accent_color: str = "#38bdf8",
+        bg: str = "#202738",
         text_color: str = "#f8fafc",
-        muted_color: str = "#94a3b8",
+        muted_color: str = "#8593a8",
         on_copy_feedback: Optional[Callable[[str], None]] = None,
     ):
-        super().__init__(master, bg=bg, padx=10, pady=7)
+        super().__init__(master, bg=bg, padx=12, pady=7)
         self.title_text = title
         self.accent_color = accent_color
         self.bg = bg
@@ -294,7 +295,7 @@ class ResultRow(tk.Frame):
         self.label_title = tk.Label(
             self,
             text=title,
-            font=FONTS["small_bold"],
+            font=FONTS["small"],
             bg=bg,
             fg=muted_color,
             anchor="w",
@@ -309,19 +310,20 @@ class ResultRow(tk.Frame):
             fg=text_color,
             anchor="e",
         )
-        self.label_value.grid(row=0, column=1, sticky="ew", padx=(8, 10))
+        self.label_value.grid(row=0, column=1, sticky="ew", padx=(8, 12))
 
+        # Compact, sleek copy button
         self.copy_btn = ModernButton(
             self,
             text="Copy",
             command=self.copy_to_clipboard,
-            width=64,
-            height=26,
-            radius=5,
-            bg_color=shade(accent_color, -10),
-            hover_color=accent_color,
-            text_color="#ffffff",
-            font=FONTS["small_bold"],
+            width=50,
+            height=24,
+            radius=4,
+            bg_color=shade(self.bg, 12),
+            hover_color=shade(self.bg, 24),
+            text_color=self.muted_color,
+            font=FONTS["badge"],
             parent_bg=bg,
         )
         self.copy_btn.grid(row=0, column=2, sticky="e")
@@ -343,7 +345,7 @@ class ResultRow(tk.Frame):
         self.clipboard_append(val)
         self.update()
 
-        # Temporary button feedback
+        # Temporary green checkmark feedback
         self.copy_btn.set_text("✓")
         self.copy_btn.update_colors("#10b981", self.bg, "#ffffff")
 
@@ -352,9 +354,9 @@ class ResultRow(tk.Frame):
 
         if self.reset_timer_id:
             self.after_cancel(self.reset_timer_id)
-        self.reset_timer_id = self.after(1400, self._restore_copy_btn)
+        self.reset_timer_id = self.after(1200, self._restore_copy_btn)
 
     def _restore_copy_btn(self):
         self.copy_btn.set_text("Copy")
-        self.copy_btn.update_colors(shade(self.accent_color, -10), self.bg, "#ffffff")
+        self.copy_btn.update_colors(shade(self.bg, 12), self.bg, self.muted_color)
         self.reset_timer_id = None

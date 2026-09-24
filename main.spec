@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 # SkinRate Calculator Pro - Fast-launch onedir build spec
-# Optimized for sub-second startup with excluded bloat and UPX compression
+# Optimized for sub-second startup with UPX compression
 
 block_cipher = None
 
@@ -20,20 +20,16 @@ a = Analysis(
         'skinrate.views',
         'skinrate.views.standard_view',
         'skinrate.views.reverse_view',
-        'skinrate.views.steam_view',
         'skinrate.views.matrix_view',
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        'argparse', 'doctest', 'email', 'html', 'http', 'pydoc',
-        'sqlite3', 'ssl', 'unittest', 'urllib', 'xml', 'xmlrpc',
-        'bz2', 'lzma', 'multiprocessing', 'distutils', 'test',
-        'asyncio', 'concurrent', 'ctypes.test'
+        'pydoc', 'doctest', 'unittest', 'test'
     ],
     noarchive=False,
-    optimize=2,
+    optimize=1,
 )
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
@@ -49,7 +45,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,
-    disable_windowed_traceback=True,
+    disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
