@@ -1,27 +1,41 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-# Fast-launch build: creates a folder app in dist/.
-# This launches faster than --onefile because Windows does not need to unpack the app every time.
+# SkinRate Calculator Pro - Fast-launch onedir build spec
+# Optimized for sub-second startup with excluded bloat and UPX compression
 
 block_cipher = None
-
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
     datas=[('assets', 'assets')],
-    hiddenimports=[],
+    hiddenimports=[
+        'skinrate',
+        'skinrate.engine',
+        'skinrate.config',
+        'skinrate.theme',
+        'skinrate.widgets',
+        'skinrate.dialogs',
+        'skinrate.views',
+        'skinrate.views.standard_view',
+        'skinrate.views.reverse_view',
+        'skinrate.views.steam_view',
+        'skinrate.views.matrix_view',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
         'argparse', 'doctest', 'email', 'html', 'http', 'pydoc',
-        'sqlite3', 'ssl', 'unittest', 'urllib', 'xml', 'xmlrpc'
+        'sqlite3', 'ssl', 'unittest', 'urllib', 'xml', 'xmlrpc',
+        'bz2', 'lzma', 'multiprocessing', 'distutils', 'test',
+        'asyncio', 'concurrent', 'ctypes.test'
     ],
     noarchive=False,
     optimize=2,
 )
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
@@ -41,6 +55,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon='assets/skinrate.ico',
+    version='version_info.txt',
 )
 
 coll = COLLECT(

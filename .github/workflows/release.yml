@@ -1,0 +1,53 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Windows Binaries
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-build.txt
+
+      - name: Run Unit Tests
+        run: |
+          python tests/test_engine.py
+
+      - name: Build Standalone EXE and Portable ZIP
+        run: |
+          python build_release.py
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "SkinRate Calculator Pro ${{ github.ref_name }}"
+          body_path: RELEASE_NOTES_v3.0.0.md
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.exe
+            dist/*.zip
+            dist/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

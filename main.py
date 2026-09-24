@@ -1,584 +1,440 @@
+"""
+SkinRate Calculator Pro - v3.0.0
+The Ultimate CS2 & Steam Wallet Rate Calculator for Bangladeshi Traders.
+
+Features:
+- Professional Top Application Toolbar with instant tab switching
+- Exact Steam Market 15% Community Fee Calculator (Valve 5% + Game 10%)
+- Item Rate & Wallet Rate Transfers with MFS Cashout (bKash Agent, Priyo, Nagad)
+- Reverse Calculator (BDT Budget -> USD Skins/Wallet)
+- CS2 Skin Flipping & ROI Profit Margin Calculator
+- Rate Matrix & Live Cheat Sheet ($1 to $1000)
+- 1-Click Formatted Trade Slip Exporter for Discord & Facebook
+- Persistent Preferences & Calculation History
+- High-DPI Razor-Sharp Windows Antialiasing
+- Dark & Light Themes
+"""
+
+from __future__ import annotations
+import sys
+import os
 import tkinter as tk
 from pathlib import Path
-import sys
+from typing import Dict, Any, Optional
 
-TAKA = "\u09F3"
-APP_NAME = "SkinRate Calculator"
+# Enable Windows High DPI Awareness before any Tkinter windows are created
+if sys.platform == "win32":
+    try:
+        import ctypes
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)  # Per-Monitor High DPI
+        except Exception:
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(1)  # System High DPI
+            except Exception:
+                ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
 
-BG = "#eaf1ff"
-BG_DARK = "#0f172a"
-PANEL = "#ffffff"
-PANEL_ALT = "#f8fbff"
-TEXT = "#162033"
-MUTED = "#64748b"
-BORDER = "#d8e2f0"
-PRIMARY = "#2563eb"
-PRIMARY_HOVER = "#1d4ed8"
-SUCCESS = "#16a34a"
-SUCCESS_HOVER = "#15803d"
-WARNING = "#f97316"
-WARNING_HOVER = "#ea580c"
-PURPLE = "#7c3aed"
-PURPLE_HOVER = "#6d28d9"
-ERROR = "#dc2626"
+from skinrate import __app_name__, __version__
+from skinrate.theme import THEMES, FONTS, shade
+from skinrate.config import ConfigManager
+from skinrate.widgets import ModernButton, PillTabBar
+from skinrate.dialogs import SettingsDialog, HistoryDialog, TradeSlipDialog, AboutDialog
+from skinrate.views import StandardView, ReverseView, SteamView, MatrixView
 
 
 def resource_path(relative_path: str) -> Path:
-    """Return a usable path both in source mode and PyInstaller mode."""
+    """Return an absolute path usable both in development and PyInstaller standalone build."""
     base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
     return base_path / relative_path
 
 
-def money_bdt(value: float) -> str:
-    # Customer requested no comma and no space: e.g. \u09F31200
-    return f"{TAKA}{int(round(value))}"
-
-
-def money_usd(value: float) -> str:
-    return f"${value:,.2f}"
-
-
-def clean_number(raw: str) -> str:
-    return (
-        raw.strip()
-        .replace(",", "")
-        .replace("$", "")
-        .replace(TAKA, "")
-        .replace("t" + "k", "")
-        .replace("T" + "k", "")
-        .replace("t" + "K", "")
-        .replace("T" + "K", "")
-    )
-
-
-def parse_positive_value(raw: str, label: str, required: bool = False):
-    cleaned = clean_number(raw)
-    if not cleaned:
-        if required:
-            raise ValueError(f"Please enter {label}.")
-        return None
-    try:
-        value = float(cleaned)
-    except ValueError as exc:
-        raise ValueError(f"{label} must be a valid number.") from exc
-    if value <= 0:
-        raise ValueError(f"{label} must be greater than 0.")
-    return value
-
-
-def shade(hex_color: str, amount: int) -> str:
-    hex_color = hex_color.lstrip("#")
-    r = max(0, min(255, int(hex_color[0:2], 16) + amount))
-    g = max(0, min(255, int(hex_color[2:4], 16) + amount))
-    b = max(0, min(255, int(hex_color[4:6], 16) + amount))
-    return f"#{r:02x}{g:02x}{b:02x}"
-
-
-class Color3DButton(tk.Canvas):
-    def __init__(
-        self,
-        master,
-        *,
-        text: str,
-        command,
-        color: str,
-        hover_color: str,
-        width: int = 150,
-        height: int = 42,
-        font=("Segoe UI", 11, "bold"),
-        text_color: str = "white",
-        bg: str = PANEL,
-    ):
-        super().__init__(
-            master,
-            width=width,
-            height=height,
-            bg=bg,
-            highlightthickness=0,
-            bd=0,
-            cursor="hand2",
-            takefocus=1,
-        )
-        self.text = text
-        self.command = command
-        self.color = color
-        self.hover_color = hover_color
-        self.current_color = color
-        self.text_color = text_color
-        self.font = font
-        self.w = width
-        self.h = height
-        self.pressed = False
-        self._draw()
-        self.bind("<Enter>", self._on_enter, add="+")
-        self.bind("<Leave>", self._on_leave, add="+")
-        self.bind("<ButtonPress-1>", self._on_press, add="+")
-        self.bind("<ButtonRelease-1>", self._on_release, add="+")
-        self.bind("<Return>", lambda _event: self.invoke(), add="+")
-        self.bind("<space>", lambda _event: self.invoke(), add="+")
-
-    def _rounded_rect(self, x1, y1, x2, y2, radius, **kwargs):
-        points = [
-            x1 + radius,
-            y1,
-            x2 - radius,
-            y1,
-            x2,
-            y1,
-            x2,
-            y1 + radius,
-            x2,
-            y2 - radius,
-            x2,
-            y2,
-            x2 - radius,
-            y2,
-            x1 + radius,
-            y2,
-            x1,
-            y2,
-            x1,
-            y2 - radius,
-            x1,
-            y1 + radius,
-            x1,
-            y1,
-        ]
-        return self.create_polygon(points, smooth=True, splinesteps=16, **kwargs)
-
-    def _draw(self):
-        self.delete("all")
-        lift = 2 if self.pressed else 0
-        depth = 3 if self.pressed else 7
-        base = self.current_color
-        dark = shade(base, -45)
-        darker = shade(base, -70)
-        light = shade(base, 32)
-
-        self._rounded_rect(7, 8, self.w - 2, self.h - 1, 14, fill="#9aa8bd", outline="")
-        self._rounded_rect(3, 5 + lift, self.w - 5, self.h - 2, 14, fill=darker, outline="")
-        self._rounded_rect(3, 1 + lift, self.w - 8, self.h - depth, 14, fill=base, outline=dark, width=1)
-        self.create_line(13, 8 + lift, self.w - 21, 8 + lift, fill=light, width=2)
-        self.create_text(
-            (self.w - 8) // 2,
-            (self.h - depth) // 2 + lift + 1,
-            text=self.text,
-            fill=self.text_color,
-            font=self.font,
-        )
-
-    def _on_enter(self, _event):
-        self.current_color = self.hover_color
-        self._draw()
-
-    def _on_leave(self, _event):
-        self.pressed = False
-        self.current_color = self.color
-        self._draw()
-
-    def _on_press(self, _event):
-        self.focus_set()
-        self.pressed = True
-        self._draw()
-
-    def _on_release(self, event):
-        inside = 0 <= event.x <= self.w and 0 <= event.y <= self.h
-        self.pressed = False
-        self._draw()
-        if inside:
-            self.invoke()
-
-    def invoke(self):
-        if self.command:
-            self.command()
-
-
-class SkinRateCalculator(tk.Tk):
+class SkinRateApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.withdraw()
-        self.title(APP_NAME)
-        self.configure(bg=BG)
-        self.minsize(990, 670)
-        self.resizable(True, True)
-        self.copied_after_id = None
-        self.icons = {}
+        self.withdraw()  # Hide window while building to prevent flicker
 
+        self.config_manager = ConfigManager()
+        self.current_theme_name = self.config_manager.get("theme", "dark")
+        self.theme = THEMES.get(self.current_theme_name, THEMES["dark"])
+
+        self.title(f"{__app_name__} v{__version__}")
+        self.configure(bg=self.theme["bg_app"])
+        self.minsize(980, 640)
+
+        # Set default geometry
+        self.geometry("1060x700")
+
+        # Set window icon
         icon_path = resource_path("assets/skinrate.ico")
         if icon_path.exists():
             try:
                 self.iconbitmap(str(icon_path))
-            except tk.TclError:
+            except Exception:
                 pass
 
-        self._load_icons()
+        self.active_tab_id = "standard"
+        self.status_clear_timer = None
+
         self._build_ui()
-        self.bind("<Return>", self.calculate)
-        self.amount_entry.focus_set()
+        self._bind_shortcuts()
+
+        # Reveal window smoothly
         self.update_idletasks()
         self.deiconify()
 
-    def _load_icons(self):
-        for name in ("amount", "item", "wallet"):
-            path = resource_path(f"assets/{name}.png")
-            if path.exists():
-                try:
-                    self.icons[name] = tk.PhotoImage(file=str(path))
-                except tk.TclError:
-                    self.icons[name] = None
-
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
 
-        shell = tk.Frame(self, bg=BG)
-        shell.grid(row=0, column=0, sticky="nsew", padx=28, pady=24)
-        shell.grid_columnconfigure(0, weight=1)
-        shell.grid_rowconfigure(2, weight=1)
+        self._build_top_toolbar()
+        self._build_content_area()
+        self._build_bottom_statusbar()
 
-        self._build_header(shell)
-        self._build_form(shell)
-        self._build_results(shell)
+    def _build_top_toolbar(self):
+        """Build professional top toolbar like modern desktop apps."""
+        toolbar_bg = self.theme["bg_toolbar"]
+        text_main = self.theme["text_main"]
+        text_muted = self.theme["text_muted"]
+        primary = self.theme["primary"]
 
+        self.toolbar = tk.Frame(self, bg=toolbar_bg, bd=0, padx=16, pady=8)
+        self.toolbar.grid(row=0, column=0, sticky="ew")
+        self.toolbar.grid_columnconfigure(1, weight=1)
 
-    def _build_header(self, master):
-        header = tk.Frame(master, bg=BG_DARK, bd=0, relief=tk.RAISED, padx=18, pady=16)
-        header.grid(row=0, column=0, sticky="ew")
-        header.grid_columnconfigure(1, weight=1)
+        # ---- Left: App Logo & Brand ----
+        brand_frame = tk.Frame(self.toolbar, bg=toolbar_bg)
+        brand_frame.grid(row=0, column=0, sticky="w")
 
-        logo = tk.Label(
-            header,
+        logo_box = tk.Label(
+            brand_frame,
             text="SR",
-            font=("Segoe UI", 18, "bold"),
-            bg="#38bdf8",
-            fg="#082f49",
-            width=4,
-            height=1,
-            relief=tk.RAISED,
-            bd=3,
+            font=("Segoe UI", 13, "bold"),
+            bg="#2563eb",
+            fg="#ffffff",
+            padx=8,
+            pady=3,
         )
-        logo.grid(row=0, column=0, sticky="w", padx=(0, 14))
+        logo_box.pack(side="left", padx=(0, 10))
+
+        title_box = tk.Frame(brand_frame, bg=toolbar_bg)
+        title_box.pack(side="left")
 
         tk.Label(
-            header,
-            text=APP_NAME,
-            font=("Segoe UI", 27, "bold"),
-            bg=BG_DARK,
-            fg="white",
-        ).grid(row=0, column=1, sticky="w")
-        badge = tk.Label(
-            header,
-            text="v2",
-            font=("Segoe UI", 11, "bold"),
-            bg="#facc15",
-            fg="#422006",
-            relief=tk.RAISED,
-            bd=3,
-            padx=16,
-            pady=6,
-        )
-        badge.grid(row=0, column=2, sticky="e")
+            title_box,
+            text="SkinRate",
+            font=("Segoe UI", 15, "bold"),
+            bg=toolbar_bg,
+            fg=text_main,
+        ).pack(side="left")
 
-    def _build_form(self, master):
-        form_card = self._card(master, bg=PANEL, padx=18, pady=18)
-        form_card.grid(row=1, column=0, sticky="ew", pady=(18, 16))
-        form_card.grid_columnconfigure((0, 1, 2), weight=1, uniform="inputs")
+        version_badge = tk.Label(
+            title_box,
+            text="PRO v3.0",
+            font=FONTS["badge"],
+            bg=self.theme.get("amber", "#f59e0b"),
+            fg="#0f172a",
+            padx=6,
+            pady=1,
+        )
+        version_badge.pack(side="left", padx=(8, 0))
 
-        self.amount_entry = self._input_group(
-            form_card,
-            label="Amount ($)",
-            placeholder="Example: 25",
-            icon_name="amount",
-            accent="#10b981",
-            row=0,
-            col=0,
+        # ---- Center: Mode Switcher Tab Bar ----
+        tab_container = tk.Frame(self.toolbar, bg=toolbar_bg)
+        tab_container.grid(row=0, column=1)
+
+        self.tab_bar = PillTabBar(
+            tab_container,
+            tabs=[
+                ("standard", "⚡ Standard ($ ➔ ৳)"),
+                ("reverse", "⇄ Reverse (৳ ➔ $)"),
+                ("steam", "🏷️ Steam Market & Profit"),
+                ("matrix", "📊 Rate Cheat Sheet"),
+            ],
+            on_change=self.switch_tab,
+            bg=toolbar_bg,
+            active_bg=primary,
+            inactive_fg=text_muted,
+            active_fg="#ffffff",
         )
-        self.item_rate_entry = self._input_group(
-            form_card,
-            label="Item rate",
-            placeholder="Example: 120",
-            icon_name="item",
-            accent="#2563eb",
-            row=0,
-            col=1,
+        self.tab_bar.pack()
+
+        # ---- Right: Quick Action Buttons ----
+        actions_frame = tk.Frame(self.toolbar, bg=toolbar_bg)
+        actions_frame.grid(row=0, column=2, sticky="e")
+
+        # Theme toggle button
+        theme_icon = "☀️ Light" if self.current_theme_name == "dark" else "🌙 Dark"
+        self.theme_btn = ModernButton(
+            actions_frame,
+            text=theme_icon,
+            command=self.toggle_theme,
+            width=76,
+            height=30,
+            radius=6,
+            bg_color=shade(toolbar_bg, 20),
+            hover_color=shade(toolbar_bg, 35),
+            text_color=text_main,
+            font=FONTS["small_bold"],
+            parent_bg=toolbar_bg,
         )
-        self.wallet_rate_entry = self._input_group(
-            form_card,
-            label="Wallet rate",
-            placeholder="Example: 118",
-            icon_name="wallet",
-            accent="#7c3aed",
-            row=0,
-            col=2,
+        self.theme_btn.pack(side="left", padx=3)
+
+        # History button
+        self.hist_btn = ModernButton(
+            actions_frame,
+            text="📜 History",
+            command=self.open_history,
+            width=80,
+            height=30,
+            radius=6,
+            bg_color=shade(toolbar_bg, 20),
+            hover_color=shade(toolbar_bg, 35),
+            text_color=text_main,
+            font=FONTS["small_bold"],
+            parent_bg=toolbar_bg,
+        )
+        self.hist_btn.pack(side="left", padx=3)
+
+        # Trade Slip button
+        self.slip_btn = ModernButton(
+            actions_frame,
+            text="📋 Trade Slip",
+            command=self.open_trade_slip,
+            width=92,
+            height=30,
+            radius=6,
+            bg_color=self.theme.get("success", "#10b981"),
+            hover_color=self.theme.get("success_hover", "#059669"),
+            text_color="#ffffff",
+            font=FONTS["small_bold"],
+            parent_bg=toolbar_bg,
+        )
+        self.slip_btn.pack(side="left", padx=3)
+
+        # Settings button
+        self.settings_btn = ModernButton(
+            actions_frame,
+            text="⚙️",
+            command=self.open_settings,
+            width=36,
+            height=30,
+            radius=6,
+            bg_color=shade(toolbar_bg, 20),
+            hover_color=shade(toolbar_bg, 35),
+            text_color=text_main,
+            font=FONTS["body_bold"],
+            parent_bg=toolbar_bg,
+        )
+        self.settings_btn.pack(side="left", padx=3)
+
+        # About button
+        self.about_btn = ModernButton(
+            actions_frame,
+            text="ℹ️",
+            command=self.open_about,
+            width=36,
+            height=30,
+            radius=6,
+            bg_color=shade(toolbar_bg, 20),
+            hover_color=shade(toolbar_bg, 35),
+            text_color=text_main,
+            font=FONTS["body_bold"],
+            parent_bg=toolbar_bg,
+        )
+        self.about_btn.pack(side="left", padx=3)
+
+    def _build_content_area(self):
+        """Container for switching between view tabs."""
+        self.content_container = tk.Frame(self, bg=self.theme["bg_app"])
+        self.content_container.grid(row=1, column=0, sticky="nsew")
+        self.content_container.grid_columnconfigure(0, weight=1)
+        self.content_container.grid_rowconfigure(0, weight=1)
+
+        # Initialize tab views
+        self.views: Dict[str, tk.Frame] = {}
+
+        self.views["standard"] = StandardView(
+            self.content_container,
+            config=self.config_manager,
+            theme=self.theme,
+            on_quote_change=self._on_quote_change,
+            on_status=self.set_status,
         )
 
-        action_row = tk.Frame(form_card, bg=PANEL)
-        action_row.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(18, 0))
-        action_row.grid_columnconfigure(0, weight=1)
+        self.views["reverse"] = ReverseView(
+            self.content_container,
+            config=self.config_manager,
+            theme=self.theme,
+            on_status=self.set_status,
+        )
+
+        self.views["steam"] = SteamView(
+            self.content_container,
+            config=self.config_manager,
+            theme=self.theme,
+            on_status=self.set_status,
+        )
+
+        self.views["matrix"] = MatrixView(
+            self.content_container,
+            config=self.config_manager,
+            theme=self.theme,
+            on_status=self.set_status,
+        )
+
+        # Display initial tab
+        self.views["standard"].grid(row=0, column=0, sticky="nsew")
+
+    def _build_bottom_statusbar(self):
+        """Bottom status bar with message on left and shortcuts on right."""
+        status_bg = self.theme.get("status_bg", "#0c1320")
+        text_muted = self.theme["text_muted"]
+
+        self.statusbar = tk.Frame(self, bg=status_bg, padx=16, pady=5)
+        self.statusbar.grid(row=2, column=0, sticky="ew")
+        self.statusbar.grid_columnconfigure(0, weight=1)
 
         self.status_label = tk.Label(
-            action_row,
-            text="Enter amount. Item and wallet rates are optional.",
-            font=("Segoe UI", 10, "bold"),
-            bg=PANEL,
-            fg=MUTED,
+            self.statusbar,
+            text="Ready. Enter Amount ($). Rates auto-fill from saved defaults.",
+            font=FONTS["small"],
+            bg=status_bg,
+            fg=text_muted,
             anchor="w",
         )
-        self.status_label.grid(row=0, column=0, sticky="ew", padx=(2, 12))
+        self.status_label.grid(row=0, column=0, sticky="w")
 
-        Color3DButton(
-            action_row,
-            text="Reset",
-            command=self.reset_fields,
-            color=WARNING,
-            hover_color=WARNING_HOVER,
-            width=120,
-            height=44,
-            bg=PANEL,
-        ).grid(row=0, column=1, sticky="e", padx=(0, 10))
-
-        Color3DButton(
-            action_row,
-            text="Calculate",
-            command=self.calculate,
-            color=SUCCESS,
-            hover_color=SUCCESS_HOVER,
-            width=180,
-            height=44,
-            font=("Segoe UI", 13, "bold"),
-            bg=PANEL,
-        ).grid(row=0, column=2, sticky="e")
-
-    def _build_results(self, master):
-        self.results = tk.Frame(master, bg=BG)
-        self.results.grid(row=2, column=0, sticky="nsew")
-        self.results.grid_columnconfigure((0, 1, 2), weight=1, uniform="results")
-        self.results.grid_rowconfigure(0, weight=1)
-
-        self.item_values = self._result_card(self.results, "Item Transfer", 0, "#2563eb")
-        self.wallet_values = self._result_card(self.results, "Wallet Transfer", 1, "#7c3aed")
-        self.misc_values = self._result_card(self.results, "Steam Tax", 2, "#0891b2")
-
-    def _card(self, master, *, bg=PANEL, padx=14, pady=14):
-        return tk.Frame(
-            master,
-            bg=bg,
-            bd=3,
-            relief=tk.RAISED,
-            highlightthickness=1,
-            highlightbackground=BORDER,
-            padx=padx,
-            pady=pady,
+        shortcuts_label = tk.Label(
+            self.statusbar,
+            text="⚡ Shortcuts: [Enter] Calc | [Esc] Clear | [Ctrl+C] Trade Slip | [Ctrl+T] Theme | [Ctrl+1..4] Tabs",
+            font=FONTS["badge"],
+            bg=status_bg,
+            fg=self.theme.get("text_dim", "#64748b"),
+            anchor="e",
         )
+        shortcuts_label.grid(row=0, column=1, sticky="e")
 
-    def _input_group(self, master, label: str, placeholder: str, icon_name: str, accent: str, row: int, col: int):
-        outer = tk.Frame(master, bg=shade(accent, -25), bd=0, padx=3, pady=3)
-        outer.grid(row=row, column=col, sticky="ew", padx=8)
-        outer.grid_columnconfigure(0, weight=1)
-
-        group = tk.Frame(outer, bg=PANEL_ALT, bd=2, relief=tk.RAISED, padx=10, pady=10)
-        group.grid(row=0, column=0, sticky="ew")
-        group.grid_columnconfigure(1, weight=1)
-
-        icon_box = tk.Frame(group, bg=accent, width=48, height=52, bd=3, relief=tk.RAISED)
-        icon_box.grid(row=0, column=0, rowspan=2, sticky="nsw", padx=(0, 10))
-        icon_box.grid_propagate(False)
-
-        icon_img = self.icons.get(icon_name)
-        if icon_img:
-            tk.Label(icon_box, image=icon_img, bg=accent).place(relx=0.5, rely=0.5, anchor="center")
-        else:
-            tk.Label(icon_box, text=icon_name[:1].upper(), font=("Segoe UI", 16, "bold"), bg=accent, fg="white").place(relx=0.5, rely=0.5, anchor="center")
-
-        tk.Label(
-            group,
-            text=label,
-            font=("Segoe UI", 10, "bold"),
-            bg=PANEL_ALT,
-            fg=TEXT,
-        ).grid(row=0, column=1, sticky="w", pady=(0, 4))
-
-        entry_shell = tk.Frame(group, bg="#cbd5e1", bd=0, padx=2, pady=2)
-        entry_shell.grid(row=1, column=1, sticky="ew")
-        entry_shell.grid_columnconfigure(0, weight=1)
-
-        entry = tk.Entry(
-            entry_shell,
-            font=("Segoe UI", 13, "bold"),
-            relief=tk.FLAT,
-            bd=0,
-            bg="white",
-            fg=TEXT,
-            insertbackground=TEXT,
-        )
-        entry.grid(row=0, column=0, sticky="ew", ipady=5, padx=1, pady=1)
-        self._add_placeholder(entry, placeholder)
-        return entry
-
-    def _add_placeholder(self, entry: tk.Entry, text: str):
-        entry.placeholder = text
-        entry.placeholder_active = True
-        entry.insert(0, text)
-        entry.configure(fg="#94a3b8")
-
-        def on_focus_in(_event):
-            if getattr(entry, "placeholder_active", False):
-                entry.delete(0, tk.END)
-                entry.configure(fg=TEXT)
-                entry.placeholder_active = False
-
-        def on_focus_out(_event):
-            if not entry.get():
-                entry.insert(0, entry.placeholder)
-                entry.configure(fg="#94a3b8")
-                entry.placeholder_active = True
-
-        entry.bind("<FocusIn>", on_focus_in, add="+")
-        entry.bind("<FocusOut>", on_focus_out, add="+")
-
-    def _entry_value(self, entry: tk.Entry):
-        if getattr(entry, "placeholder_active", False):
-            return ""
-        return entry.get()
-
-    def _result_card(self, master, title: str, column: int, accent: str):
-        card = self._card(master, bg=PANEL, padx=0, pady=0)
-        card.grid(row=0, column=column, sticky="nsew", padx=8)
-        card.grid_columnconfigure(0, weight=1)
-
-        header = tk.Frame(card, bg=accent, bd=0, padx=14, pady=11)
-        header.grid(row=0, column=0, sticky="ew")
-        header.grid_columnconfigure(0, weight=1)
-        tk.Label(
-            header,
-            text=title,
-            font=("Segoe UI", 15, "bold"),
-            bg=accent,
-            fg="white",
-            anchor="w",
-        ).grid(row=0, column=0, sticky="w")
-
-        body = tk.Frame(card, bg=PANEL, padx=14, pady=14)
-        body.grid(row=1, column=0, sticky="nsew")
-        body.grid_columnconfigure(1, weight=1)
-
-        keys = ["Cost", "Cashout Agent", "Cashout Priyo"]
-        if title == "Steam Tax":
-            keys = ["With 15% Tax", "Without 15% Tax", "Base Amount"]
-
-        value_labels = {}
-        for r, key in enumerate(keys):
-            row_frame = tk.Frame(body, bg=PANEL_ALT, bd=2, relief=tk.RAISED, padx=10, pady=8)
-            row_frame.grid(row=r, column=0, columnspan=3, sticky="ew", pady=5)
-            row_frame.grid_columnconfigure(1, weight=1)
-
-            tk.Label(
-                row_frame,
-                text=key,
-                font=("Segoe UI", 9, "bold"),
-                bg=PANEL_ALT,
-                fg=MUTED,
-            ).grid(row=0, column=0, sticky="w")
-
-            value_label = tk.Label(
-                row_frame,
-                text="-",
-                font=("Segoe UI", 12, "bold"),
-                bg=PANEL_ALT,
-                fg=TEXT,
-                anchor="e",
-            )
-            value_label.grid(row=0, column=1, sticky="ew", padx=(8, 8))
-            value_labels[key] = value_label
-
-            Color3DButton(
-                row_frame,
-                text="Copy",
-                command=lambda label=value_label: self.copy_value(label),
-                color=accent,
-                hover_color=shade(accent, -20),
-                width=82,
-                height=33,
-                font=("Segoe UI", 8, "bold"),
-                bg=PANEL_ALT,
-            ).grid(row=0, column=2, sticky="e")
-
-        return value_labels
-
-    def calculate(self, _event=None):
-        try:
-            amount = parse_positive_value(self._entry_value(self.amount_entry), "Amount", required=True)
-            item_rate = parse_positive_value(self._entry_value(self.item_rate_entry), "Item rate")
-            wallet_rate = parse_positive_value(self._entry_value(self.wallet_rate_entry), "Wallet rate")
-
-            self._set_result(self.misc_values["With 15% Tax"], money_usd(amount * 1.15))
-            self._set_result(self.misc_values["Without 15% Tax"], money_usd(amount * 0.85))
-            self._set_result(self.misc_values["Base Amount"], money_usd(amount))
-
-            if item_rate:
-                item_cost = amount * item_rate
-                self._set_result(self.item_values["Cost"], money_bdt(item_cost))
-                self._set_result(self.item_values["Cashout Agent"], money_bdt(item_cost * 1.0185))
-                self._set_result(self.item_values["Cashout Priyo"], money_bdt(item_cost * 1.0149))
-            else:
-                self._clear_group(self.item_values, "Enter item rate")
-
-            if wallet_rate:
-                wallet_cost = amount * wallet_rate
-                self._set_result(self.wallet_values["Cost"], money_bdt(wallet_cost))
-                self._set_result(self.wallet_values["Cashout Agent"], money_bdt(wallet_cost * 1.0185))
-                self._set_result(self.wallet_values["Cashout Priyo"], money_bdt(wallet_cost * 1.0149))
-            else:
-                self._clear_group(self.wallet_values, "Enter wallet rate")
-
-            self._status("Calculated successfully.", SUCCESS)
-        except ValueError as exc:
-            self._status(str(exc), ERROR)
-
-    def reset_fields(self):
-        for entry in (self.amount_entry, self.item_rate_entry, self.wallet_rate_entry):
-            entry.delete(0, tk.END)
-            entry.placeholder_active = False
-            entry.event_generate("<FocusOut>")
-        for group in (self.item_values, self.wallet_values, self.misc_values):
-            for label in group.values():
-                label.configure(text="-", fg=TEXT)
-        self._status("Cleared. Ready for new calculation.", PRIMARY)
-        self.amount_entry.focus_set()
-
-    def _set_result(self, label: tk.Label, value: str):
-        label.configure(text=value, fg=TEXT)
-
-    def _clear_group(self, labels: dict, message: str):
-        first = True
-        for label in labels.values():
-            label.configure(text=message if first else "-", fg=MUTED)
-            first = False
-
-    def copy_value(self, label: tk.Label):
-        value = label.cget("text")
-        if value in {"-", "Enter item rate", "Enter wallet rate"}:
-            self._status("Nothing to copy yet.", ERROR)
+    def switch_tab(self, tab_id: str):
+        if tab_id not in self.views:
             return
-        self.clipboard_clear()
-        self.clipboard_append(value)
-        self.update()
-        self._status(f"Copied {value}", PRIMARY)
+        self.active_tab_id = tab_id
+        for vid, v in self.views.items():
+            if vid == tab_id:
+                v.grid(row=0, column=0, sticky="nsew")
+                if hasattr(v, "calculate"):
+                    v.calculate()
+            else:
+                v.grid_forget()
 
-    def _status(self, text: str, color: str):
+    def set_status(self, text: str, color: Optional[str] = None):
+        color = color or self.theme["text_muted"]
         self.status_label.configure(text=text, fg=color)
-        if self.copied_after_id:
-            self.after_cancel(self.copied_after_id)
-            self.copied_after_id = None
-        if color != ERROR:
-            self.copied_after_id = self.after(
-                2500,
-                lambda: self.status_label.configure(
-                    text="Enter amount. Item and wallet rates are optional.",
-                    fg=MUTED,
-                ),
+        if self.status_clear_timer:
+            self.after_cancel(self.status_clear_timer)
+        self.status_clear_timer = self.after(
+            3500,
+            lambda: self.status_label.configure(
+                text="Ready.",
+                fg=self.theme["text_muted"],
+            ),
+        )
+
+    def _on_quote_change(self, _quote: Dict[str, Any]):
+        pass
+
+    def toggle_theme(self):
+        new_theme = "light" if self.current_theme_name == "dark" else "dark"
+        self.current_theme_name = new_theme
+        self.config_manager.set("theme", new_theme)
+        # Restart or rebuild UI with new theme
+        self.theme = THEMES[new_theme]
+        self._rebuild_all_views()
+
+    def _rebuild_all_views(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+        self.configure(bg=self.theme["bg_app"])
+        self._build_ui()
+        self._bind_shortcuts()
+
+    def open_settings(self):
+        SettingsDialog(self, self.config_manager, self.theme, on_save=self._on_settings_saved)
+
+    def _on_settings_saved(self):
+        std_view = self.views.get("standard")
+        if std_view and hasattr(std_view, "reset_to_defaults"):
+            std_view.reset_to_defaults()
+            std_view.calculate()
+        matrix_view = self.views.get("matrix")
+        if matrix_view and hasattr(matrix_view, "recalculate"):
+            matrix_view.recalculate()
+        self.set_status("✓ Settings saved and applied.", self.theme.get("success", "#10b981"))
+
+    def open_history(self):
+        HistoryDialog(self, self.config_manager, self.theme, on_restore=self._on_history_restore)
+
+    def _on_history_restore(self, item: Dict[str, Any]):
+        self.tab_bar.select_tab("standard")
+        std_view = self.views.get("standard")
+        if std_view and hasattr(std_view, "set_inputs"):
+            std_view.set_inputs(
+                amount=item.get("amount_usd", 0.0),
+                item_rate=item.get("item_rate"),
+                wallet_rate=item.get("wallet_rate"),
             )
+        self.set_status(f"✓ Restored calculation from {item.get('timestamp')}", self.theme.get("primary", "#3b82f6"))
+
+    def open_trade_slip(self):
+        std_view = self.views.get("standard")
+        quote = std_view.latest_quote if std_view else None
+        if not quote:
+            self.set_status("Please perform a calculation first before exporting trade slip.", self.theme.get("danger", "#ef4444"))
+            return
+        TradeSlipDialog(self, quote, self.config_manager, self.theme)
+
+    def open_about(self):
+        AboutDialog(self, self.theme)
+
+    def _bind_shortcuts(self):
+        self.bind("<Return>", self._on_enter_pressed)
+        self.bind("<Escape>", self._on_escape_pressed)
+        self.bind("<Control-c>", self._on_ctrl_c)
+        self.bind("<Control-C>", self._on_ctrl_c)
+        self.bind("<Control-t>", lambda _e: self.toggle_theme())
+        self.bind("<Control-T>", lambda _e: self.toggle_theme())
+        self.bind("<Control-h>", lambda _e: self.open_history())
+        self.bind("<Control-H>", lambda _e: self.open_history())
+        self.bind("<Control-s>", lambda _e: self.open_settings())
+        self.bind("<Control-S>", lambda _e: self.open_settings())
+        self.bind("<Control-Key-1>", lambda _e: self.tab_bar.select_tab("standard"))
+        self.bind("<Control-Key-2>", lambda _e: self.tab_bar.select_tab("reverse"))
+        self.bind("<Control-Key-3>", lambda _e: self.tab_bar.select_tab("steam"))
+        self.bind("<Control-Key-4>", lambda _e: self.tab_bar.select_tab("matrix"))
+
+    def _on_enter_pressed(self, _event=None):
+        active = self.views.get(self.active_tab_id)
+        if active and hasattr(active, "calculate"):
+            active.calculate()
+
+    def _on_escape_pressed(self, _event=None):
+        active = self.views.get(self.active_tab_id)
+        if active and hasattr(active, "clear_fields"):
+            active.clear_fields()
+
+    def _on_ctrl_c(self, _event=None):
+        # If user is in an Entry widget with text selected, let standard copy happen
+        focus = self.focus_get()
+        if isinstance(focus, tk.Entry):
+            try:
+                if focus.selection_present():
+                    return
+            except Exception:
+                pass
+        self.open_trade_slip()
 
 
 if __name__ == "__main__":
-    SkinRateCalculator().mainloop()
+    app = SkinRateApp()
+    app.mainloop()

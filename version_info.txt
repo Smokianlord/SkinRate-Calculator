@@ -1,0 +1,36 @@
+# UTF-8
+#
+# Version Information for SkinRate Calculator Pro
+#
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(3, 0, 0, 0),
+    prodvers=(3, 0, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          '040904B0',
+          [
+            StringStruct('CompanyName', 'Smokianlord'),
+            StringStruct('FileDescription', 'SkinRate Calculator Pro'),
+            StringStruct('FileVersion', '3.0.0.0'),
+            StringStruct('InternalName', 'SkinRateCalculator'),
+            StringStruct('LegalCopyright', 'Copyright (C) 2026 Smokianlord. All rights reserved.'),
+            StringStruct('OriginalFilename', 'SkinRate Calculator.exe'),
+            StringStruct('ProductName', 'SkinRate Calculator Pro'),
+            StringStruct('ProductVersion', '3.0.0.0')
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
