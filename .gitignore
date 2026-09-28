@@ -1,20 +1,47 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-
-# Virtual environments
-.venv/
-venv/
-env/
-
-# PyInstaller
+# Compiled Binaries & Build Output
+*.exe
+*.dll
+*.so
+*.dylib
 build/
 dist/
 *.manifest
 *.spec.bak
 
-# Local files
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+*.log
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Configuration
+.config/
+
+# IDE & Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.suo
+*.user
+
+# OS & Local Files
 .DS_Store
 Thumbs.db
+Desktop.ini
