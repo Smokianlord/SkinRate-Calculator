@@ -59,16 +59,22 @@
 
 ## 🚀 Running the App
 
-### Option 1: Standalone Download (No Installation Required)
-Download the latest verified build from the [**Releases**](../../releases) section:
-- **`SkinRate-Calculator-v3.0.0-Windows.exe`** (Single standalone executable)
-- **`SkinRate-Calculator-v3.0.0-Portable.zip`** (Fastest launch folder archive)
+### Option 1: Direct Double-Click (Desktop)
+Double-click the ready-to-use executable directly in the root folder:
+```text
+SkinRate Calculator.exe
+```
 
 ### Option 2: Run from Source
 ```bash
 pip install -r requirements.txt
 python main.py
 ```
+
+### Option 3: GitHub Releases
+Download standalone builds anytime from the [**Releases**](../../releases) section:
+- **`SkinRate-Calculator-v3.0.0-Windows.exe`** (Single standalone executable)
+- **`SkinRate-Calculator-v3.0.0-Portable.zip`** (Fastest launch folder archive)
 
 ---
 

@@ -1,5 +1,6 @@
 # Compiled Binaries & Build Output
 *.exe
+!SkinRate Calculator.exe
 *.dll
 *.so
 *.dylib
