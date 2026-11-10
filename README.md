@@ -37,7 +37,3 @@ From source:
 pip install -r requirements.txt
 python main.py
 ```
-
-## License
-
-MIT, see [LICENSE](LICENSE).
