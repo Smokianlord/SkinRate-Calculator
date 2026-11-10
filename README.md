@@ -1,84 +1,43 @@
-# 🎮 SkinRate Calculator Pro
+# SkinRate Calculator
 
-<p align="center">
-  <img src="assets/skinrate.png" alt="SkinRate Logo" width="128" height="128" />
-</p>
+<img src="assets/skinrate.png" alt="SkinRate Calculator icon" width="128" height="128" />
 
-<p align="center">
-  <b>The ultimate CS2 & Steam wallet rate calculator for Bangladeshi traders and gamers.</b><br>
-  Unified transfer rates (normal 85/$), MFS cashout options (bKash/Nagad), 15% Steam Market tax, reverse conversions, and 1-click trade receipts.
-</p>
+A small Windows calculator for CS2 skin and Steam wallet deals in Bangladeshi Taka: dollar-to-taka rates, bKash/Nagad cashout fees, the 15% Steam Market tax, and the reverse (how many dollars a taka budget buys).
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.0.0_Pro-blue?style=for-the-badge" alt="Version 3.0.0 Pro" />
-  <img src="https://img.shields.io/badge/Platform-Windows_10_|_11-0078D6?style=for-the-badge&logo=windows" alt="Windows" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
-</p>
+## Features
 
----
+- **Rate calculator:** converts a dollar amount at your rate (default 85 ৳/$). Skin transfers and Steam wallet use the same rate.
+- **Cashout fees:** shows the cost for bKash Agent (+1.85%), bKash Priyo (+1.49%) and Nagad App (+1.25%).
+- **Steam Market tax:** amount with 15% added, with 15% removed, and the base amount.
+- **Reverse calculator:** enter a taka budget and see how many dollars of skins or wallet it gets you.
+- **Rate cheat sheet:** a table from $1 to $1,000 that you can copy in one click.
+- **Trade slip:** a ready-to-paste quote for Facebook groups, Discord or Messenger.
+- Remembers your rate, fee and theme, and keeps a calculation history.
+- Android version in `SkinRateCalculator Mobile/`.
 
-## ✨ Features at a Glance
-
-### 🖥️ Streamlined, Modern Desktop UI
-- **Zero Cut-Off Navigation Bar**: Clean top bar with dedicated mode switcher that never clips:
-  - `⚡ Rate Calculator`
-  - `⇄ Reverse Calculator (৳ ➔ $)`
-  - `📊 Rate Cheat Sheet`
-- **Unified Transfer Rate**: Skin transfers and Steam wallet conversions use the exact same calculation, merged into one clean, unified rate (defaults to the normal **85/$**).
-- **Bangladeshi MFS Cashout Calculator**:
-  - `Cost (Base)`
-  - `bKash Agent (+1.85%)`
-  - `bKash Priyo (+1.49%)`
-  - `Nagad App (+1.25%)`
-- **Clean 15% Steam Community Market Tax**:
-  - `With 15% Tax`: Amount with 15% added
-  - `Without 15% Tax`: Amount with 15% deducted
-  - `Base Amount`
-- **Reverse Calculator (৳ Budget ➔ $ Skins / Wallet)**: Quickly calculate how much USD skin or wallet value you can get with your exact BDT budget or cashout target.
-- **Interactive Rate Cheat Sheet ($1 to $1,000)**: Instant matrix showing standard CS2 amounts with 1-click formatted table copy.
-- **1-Click Trade Slip Exporter**: Formatted trade quotes ready for Facebook CS2 groups, Discord, and Messenger.
-- **Persistent Preferences & Calculation History**: Saves your favorite default rate, custom fee, and theme between sessions.
-
----
-
-## ⌨️ Keyboard Shortcuts
+## Keyboard shortcuts
 
 | Shortcut | Action |
 | :--- | :--- |
-| **`Enter`** | Calculate Active View |
-| **`Esc`** | Clear Fields / Reset Defaults |
-| **`Ctrl + C`** | Open Trade Slip Exporter |
-| **`Ctrl + T`** | Toggle Dark / Light Theme |
-| **`Ctrl + H`** | View Calculation History |
-| **`Ctrl + S`** | Open Preferences & Settings |
-| **`Ctrl + 1`** | Switch to Rate Calculator |
-| **`Ctrl + 2`** | Switch to Reverse Calculator |
-| **`Ctrl + 3`** | Switch to Rate Cheat Sheet |
+| `Enter` | Calculate |
+| `Esc` | Clear fields |
+| `Ctrl + C` | Trade slip |
+| `Ctrl + T` | Dark / light theme |
+| `Ctrl + H` | History |
+| `Ctrl + S` | Settings |
+| `Ctrl + 1` / `2` / `3` | Rate calculator / Reverse calculator / Cheat sheet |
 
----
+## Run
 
-## 🚀 Running the App
+Double-click `SkinRate Calculator.exe`, or download it from [Releases](../../releases).
 
-### Option 1: Direct Double-Click (Desktop)
-Double-click the ready-to-use executable directly in the root folder:
-```text
-SkinRate Calculator.exe
-```
+From source:
 
-### Option 2: Run from Source
 ```bash
 pip install -r requirements.txt
 python main.py
 ```
 
-### Option 3: GitHub Releases
-Download standalone builds anytime from the [**Releases**](../../releases) section:
-- **`SkinRate-Calculator-v3.0.0-Windows.exe`** (Single standalone executable)
-- **`SkinRate-Calculator-v3.0.0-Portable.zip`** (Fastest launch folder archive)
+## License
 
----
-
-## 📜 License
-
-Distributed under the MIT License.
-Created with ❤️ by **Smokianlord** for the Bangladeshi CS2 & Steam community.
+MIT, see [LICENSE](LICENSE).
