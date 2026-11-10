@@ -1,6 +1,8 @@
 # SkinRate Calculator
 
-<img src="assets/skinrate.png" alt="SkinRate Calculator icon" width="128" height="128" />
+<p align="center">
+  <img src="assets/skinrate.png" alt="SkinRate Calculator icon" width="128" height="128" />
+</p>
 
 A small Windows calculator for CS2 skin and Steam wallet deals in Bangladeshi Taka: dollar-to-taka rates, bKash/Nagad cashout fees, the 15% Steam Market tax, and the reverse (how many dollars a taka budget buys).
 
